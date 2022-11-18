@@ -20,5 +20,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "api.User"
 
 AUTHENTICATION_BACKENDS = [
-    "api.backends.EmailOrUsernameBackEnd",
+    "api.backends.EmailBackEnd",
+     "api.backends.UsernameBackEnd",
 ]
