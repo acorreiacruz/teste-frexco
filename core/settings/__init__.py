@@ -6,3 +6,4 @@ from .databases import *
 from .security import *
 from .i18n import *
 from .staticfiles import *
+from .rest_framework import *
