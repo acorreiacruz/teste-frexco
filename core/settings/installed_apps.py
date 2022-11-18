@@ -8,6 +8,7 @@ INSTALLED_APPS = [
     # Thirdy apps
     "rest_framework",
     "rest_framework_simplejwt",
+    "corsheaders",
     "drf_yasg",
     # My apps
     "api",
