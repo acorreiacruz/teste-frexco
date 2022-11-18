@@ -1,27 +1,16 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import BaseBackend
-from django.db.models import Q
+from abc import abstractmethod, ABC
+
 
 User = get_user_model()
 
 
-class EmailOrUsernameBackEnd(BaseBackend):
-    def authenticate(
-        self, request, username=None, password=None, authentication_field=None
-    ):
-        if not password:
-            return None
-        try:
-            user = User.objects.get(
-                Q(username=username or authentication_field)
-                | Q(email=username or authentication_field)
-            )
-        except user.DoesNotExist:
-            return None
-        if user.check_password(password) and self.user_can_authenticate(user):
-            return user
-        return None
-
+class CustomBackEnd(BaseBackend, ABC):
+    @abstractmethod
+    def authenticate(self, request, authentication_field=None, password=None , username=None):
+        pass
+    
     def get_user(self, user_id):
         try:
             user = User.objects.get(id=user_id)
@@ -32,3 +21,29 @@ class EmailOrUsernameBackEnd(BaseBackend):
     def user_can_authenticate(self, user):
         is_active = getattr(user, "is_active", None)
         return is_active or is_active is None
+
+
+class EmailBackEnd(CustomBackEnd):
+    def authenticate(self, request, authentication_field=None, password=None , username=None):
+        if not password:
+            return None
+        try:
+            user = User.objects.get(email=username or authentication_field)
+        except User.DoesNotExist:
+            return None
+        if user.check_password(password) and self.user_can_authenticate(user):
+            return user
+        return None
+
+
+class UsernameBackEnd(CustomBackEnd):
+    def authenticate(self, request, authentication_field=None, password=None , username=None):
+        if not password:
+            return None
+        try:
+            user = User.objects.get(username=username or authentication_field)
+        except User.DoesNotExist:
+            return None
+        if user.check_password(password) and self.user_can_authenticate(user):
+            return user
+        return None
