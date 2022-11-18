@@ -33,7 +33,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = "User"
         verbose_name_plural = "Users"
-        ordering = ("-id",)
+        ordering = ("id",)
         db_table = "users"
 
     first_name = models.CharField(max_length=150, blank=True, null=False)
