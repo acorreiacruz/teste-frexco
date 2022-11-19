@@ -9,20 +9,6 @@ class ApiTestBase(TestCase):
     def get_url(self, action="list", **kwargs):
         return reverse(f"api:api-user-{action}", kwargs={**kwargs})
 
-    def get_response(self, action="list", method="get", data=None, **kwargs):
-        if method == "get":
-            response = self.get(
-                self.get_url(action=action,kwargs={**kwargs}),
-                HTTP_AUTHORIZATION=f"Bearer"
-            )
-        if method == "post":
-            ...
-        if method == "patch":
-            ...
-        if method == "delete":
-            ...
-        return response
-
     def create_user(
         first_name="jhon",
         last_name="doe",
@@ -56,7 +42,7 @@ class ApiTestBase(TestCase):
 
     def get_tokens(self, authentication_field=None, password=None):
         if not authentication_field or not password:
-            self.create_user()
+            user = self.create_user()
         response = self.client.post(
             reverse("api:token_obtain_pair"),
             {
@@ -67,6 +53,7 @@ class ApiTestBase(TestCase):
         return {
             "access": response.data.get("access"),
             "refresh": response.data.get("refresh"),
+            "user": user
         }
 
     def refresh_token(self, refresh_token):
@@ -135,10 +122,63 @@ class ApiTest(ApiTestBase):
         self.assertEqual(response.status_code, 401)
 
     def test_if_api_return_status_code_200_on_retrieve(self):
-        ...
+        access_token = self.get_tokens().get("access")
+        response = self.client.get(
+            self.get_url(action="detail",pk=1),
+            HTTP_AUTHORIZATION=f"Bearer {access_token}"
+        )
+        self.assertEqual(response.status_code, 200)
 
     def test_if_api_retrieve_user(self):
-        ...
+        token = self.get_tokens().get("access")
+        response = self.client.get(
+            self.get_url(action="detail",pk=1),
+            HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        self.assertEqual(response.data.get("username"), "jhondoe")
+        self.assertEqual(response.data.get("email"), "jhondoe@email.com")
+
 
     def test_if_api_return_status_code_401_if_user_not_authenticated_on_retrieve(self):
-        ...
+        response = self.client.get(
+            self.get_url(action="detail",pk=1)
+        )
+        self.assertEqual(response.status_code, 401)
+    
+    def test_if_api_return_status_code_201_on_create(self):
+        response = self.client.post(
+            self.get_url(),
+            data={
+                "username": "usertest",
+                "email": "usertest@email.com",
+                "birth_date": "1989-10-25",
+                "password": "P@ssword123"
+            }
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data.get("username"), "usertest")
+        self.assertEqual(response.data.get("email"), "usertest@email.com")
+    
+    def test_if_api_return_status_code_204_on_delete(self):
+        tokens = self.get_tokens()
+        access_token=tokens.get("access")
+        user=tokens.get("user")
+        response=self.client.delete(
+            self.get_url("detail", pk=user.pk),
+            HTTP_AUTHORIZATION=f"Bearer {access_token}"
+        )
+        self.assertEqual(response.status_code, 204)
+
+    def test_if_user_cant_delete_other_user(self):
+        user_other = self.create_user("crueger","freddy","freddy@email.com")
+        tokens = self.get_tokens()
+        user = tokens.get("user")
+        access_token=tokens.get("access")
+        response=self.client.delete(
+            self.get_url("detail", pk=user_other.pk),
+            HTTP_AUTHORIZATION=f"Bearer {access_token}"
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+    
